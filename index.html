@@ -133,7 +133,6 @@
     font-weight: 600;
     letter-spacing: 0.5px;
 }
-
         
         @media (max-width: 768px) {
             .tabs { flex-direction: column; }
@@ -234,7 +233,7 @@
                 <label>🔢 Session Code</label>
                 <input type="text" id="s-code" placeholder="6-digit code from teacher">
             </div>
-            <button onclick="markAttendance()">✅ Mark My Attendance</button>
+           <button onclick="markAttendance()" id="attendance-btn">✅ Mark My Attendance</button>
             <div id="attendance-status"></div>
         </div>
         
@@ -268,7 +267,7 @@
 
     <script>
         // 🔥 REPLACE THIS WITH YOUR GOOGLE APPS SCRIPT WEB APP URL
-        const API_BASE = 'https://script.google.com/macros/s/AKfycby1pPmu4QdDqyPTg9OhFhTeI8X2U2xZokk0lEFYzKHW6w_e90il72uS1wDP4G6xhXLJ9g/exec'; // <- PASTE YOUR URL HERE!
+        const API_BASE = 'https://script.google.com/macros/s/AKfycbxFdYj8BI4M-eKAo8qd0EZL3lIZOTAdQMwgfzGlzFwnHVkujqECRz5lGZhovqqi8yso/exec'; // <- PASTE YOUR URL HERE!
         
         // Generate unique device ID
         const deviceId = btoa(navigator.userAgent + screen.width + screen.height + Date.now()).substring(0, 32);
@@ -403,66 +402,50 @@
         }
         
         // STUDENT FUNCTIONS
-        async function markAttendance() {
-            const name = document.getElementById('s-name').value.trim();
-            const roll = document.getElementById('s-roll').value.trim();
-            const subject = document.getElementById('s-subject').value.trim();
-            const code = document.getElementById('s-code').value.trim();
-            const status = document.getElementById('attendance-status');
-            
-            if (!name || !roll || !subject || !code) {
-                return status.innerHTML = '<div class="status error">❌ Fill all fields</div>';
-            }
-            
-            try {
-                const response = await fetch(API_BASE, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: new URLSearchParams({
-                        name, roll, subject, code, deviceId
-                    })
-                });
-                const result = await response.text();
-                status.innerHTML = `<div class="status ${result.startsWith('✅') ? 'success' : 'error'}">${result}</div>`;
-                
-                if (result.startsWith('✅')) {
-                    document.getElementById('s-name').value = '';
-                    document.getElementById('s-roll').value = '';
-                    document.getElementById('s-subject').value = '';
-                    document.getElementById('s-code').value = '';
-                }
-            } catch (e) {
-                status.innerHTML = '<div class="status error">❌ Network error</div>';
-            }
+     async function markAttendance() {
+    const name = document.getElementById('s-name').value.trim();
+    const roll = document.getElementById('s-roll').value.trim();
+    const subject = document.getElementById('s-subject').value.trim();
+    const code = document.getElementById('s-code').value.trim();
+    const status = document.getElementById('attendance-status');
+    const btn = document.getElementById('attendance-btn');
+
+    if (!name || !roll || !subject || !code) {
+        return status.innerHTML = '<div class="status error">❌ Fill all fields</div>';
+    }
+
+    // 🔄 START LOADING
+    btn.disabled = true;
+    btn.textContent = 'Submitting...';
+    status.innerHTML = '';
+
+    try {
+        const response = await fetch(API_BASE, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+                name, roll, subject, code, deviceId
+            })
+        });
+
+        const result = await response.text();
+        status.innerHTML = `<div class="status ${result.startsWith('✅') ? 'success' : 'error'}">${result}</div>`;
+
+        if (result.startsWith('✅')) {
+            document.getElementById('s-name').value = '';
+            document.getElementById('s-roll').value = '';
+            document.getElementById('s-subject').value = '';
+            document.getElementById('s-code').value = '';
         }
-        
-        // LIVE VIEW FUNCTIONS
-        async function loadLiveAttendance() {
-            const subject = document.getElementById('l-subject').value.trim();
-            const code = document.getElementById('l-code').value.trim();
-            const tbody = document.getElementById('live-tbody');
-            
-            if (!subject || !code) return alert('Enter subject & code');
-            
-            try {
-                const response = await fetch(`${API_BASE}?action=live&subject=${encodeURIComponent(subject)}&code=${code}`);
-                const students = await response.json();
-                
-                tbody.innerHTML = students.map(s => `
-                    <tr>
-                        <td data-label="Name">${s.name}</td>
-                        <td data-label="Roll">${s.roll}</td>
-                        <td data-label="Time">${s.time}</td>
-                        <td data-label="Status">
-                            <span class="status-${s.status.includes('On Time') ? 'on' : 'late'}">${s.status}</span>
-                        </td>
-                        <td data-label="Device">${s.device.substring(0,12)}...</td>
-                    </tr>
-                `).join('') || '<tr><td colspan="5" style="text-align:center;padding:40px;color:#666;">No attendance yet</td></tr>';
-            } catch (e) {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:#666;">Error loading data</td></tr>';
-            }
-        }
+
+    } catch (e) {
+        status.innerHTML = '<div class="status error">❌ Network error</div>';
+    }
+
+    // ✅ STOP LOADING
+    btn.disabled = false;
+    btn.textContent = '✅ Mark My Attendance';
+}
         
         // AUTO-REFRESH
         setInterval(() => {
@@ -484,10 +467,9 @@
         console.log('Device ID:', deviceId);
         console.log('API URL:', API_BASE);
     </script>
-    <div class="footer">
+<div class="footer">
     POWERED BY CODEVERSE – RIMT UNIVERSITY
 </div>
 
 </body>
-</html>
-
+</html
